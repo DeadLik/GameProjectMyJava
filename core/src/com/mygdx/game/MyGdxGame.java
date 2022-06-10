@@ -16,8 +16,10 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.util.ArrayList;
@@ -34,13 +36,47 @@ public class MyGdxGame extends ApplicationAdapter {
     private List<Coin> coinList;
     private Texture fon;
     private MyCharacter nosRog;
-
     private int[] foreGround, backGround;
-
     private int score;
+
+    private World world;
+    private Box2DDebugRenderer debugRenderer;
+    private boolean start;
+    private Body heroBody;
 
     @Override
     public void create() {
+        world = new World(new Vector2(0, -9.81f), true);
+        debugRenderer = new Box2DDebugRenderer();
+
+        BodyDef def = new BodyDef();
+        FixtureDef fdef = new FixtureDef();
+        PolygonShape polygonShape = new PolygonShape();
+
+        def.position.set(new Vector2(700f, 318f));
+        def.type = BodyDef.BodyType.StaticBody;
+        fdef.density = 1;
+        fdef.friction = 0f;
+        fdef.restitution = 0.0f;
+
+        polygonShape.setAsBox(700.67f, 13.58f);
+        fdef.shape = polygonShape;
+
+        world.createBody(def).createFixture(fdef);
+
+        def.type = BodyDef.BodyType.DynamicBody;
+        for (int i = 0; i < 25; i++) {
+            def.position.set(new Vector2(MathUtils.random(0f, 500f), 500f));
+            def.gravityScale = MathUtils.random(0.5f, 5f);
+
+            float size = MathUtils.random(3f, 15f);
+            polygonShape.setAsBox(size, size);
+            fdef.shape = polygonShape;
+            world.createBody(def).createFixture(fdef);
+        }
+
+        polygonShape.dispose();
+
         nosRog = new MyCharacter();
         fon = new Texture("fon.png");
         map = new TmxMapLoader().load("maps/level1.tmx");
@@ -105,7 +141,6 @@ public class MyGdxGame extends ApplicationAdapter {
 
         mapRenderer.setView(camera);
         mapRenderer.render(backGround);
-        mapRenderer.render(foreGround);
 
         batch.begin();
         batch.draw(nosRog.getFrame(), Gdx.graphics.getHeight() / 2, Gdx.graphics.getHeight() / 2);
@@ -135,11 +170,20 @@ public class MyGdxGame extends ApplicationAdapter {
         renderer.setColor(heroClr);
         renderer.rect(nosRog.getRect().x, nosRog.getRect().y, nosRog.getRect().width, nosRog.getRect().height);
         renderer.end();*/ // ДЛЯ ОТЛАДКИ
+
+        mapRenderer.setView(camera);
+        mapRenderer.render(foreGround);
+
+        world.step(1 / 60.0f, 3, 3);
+        debugRenderer.render(world, camera.combined);
     }
+
+
 
     @Override
     public void dispose() {
         batch.dispose();
         coinList.get(0).dispose();
+        world.dispose();
     }
 }
