@@ -26,7 +26,7 @@ import java.util.List;
 
 public class MyGdxGame extends ApplicationAdapter {
     private SpriteBatch batch;
-    //private ShapeRenderer renderer; //ДЛЯ ОТЛАДКИ
+//    private ShapeRenderer renderer; //ДЛЯ ОТЛАДКИ
     private Label label;
     private TiledMap map;
     private OrthogonalTiledMapRenderer mapRenderer;
@@ -34,6 +34,7 @@ public class MyGdxGame extends ApplicationAdapter {
     private List<Coin> coinList;
     private Texture fon;
     private MyCharacter nosRog;
+    private PhysX physX;
 
     private int[] foreGround, backGround;
 
@@ -46,21 +47,30 @@ public class MyGdxGame extends ApplicationAdapter {
         map = new TmxMapLoader().load("maps/level1.tmx");
         mapRenderer = new OrthogonalTiledMapRenderer(map);
 
+        physX = new PhysX();
+        if (map.getLayers().get("land") != null) {
+            MapObjects mo = map.getLayers().get("land").getObjects();
+            physX.addObjects(mo);
+            MapObject mo1 = map.getLayers().get("Слой объектов 2").getObjects().get("hero");
+            physX.addObject(mo1);
+        }
+
         foreGround = new int[1];
         foreGround[0] = map.getLayers().getIndex("Слой тайлов 2");
         backGround = new int[1];
         backGround[0] = map.getLayers().getIndex("Слой тайлов 1");
 
         batch = new SpriteBatch();
-        //renderer = new ShapeRenderer(); //ДЛЯ ОТЛАДКИ
+//        renderer = new ShapeRenderer(); //ДЛЯ ОТЛАДКИ
 
 
         label = new Label(36);
 
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         RectangleMapObject o = (RectangleMapObject) map.getLayers().get("Слой объектов 2").getObjects().get("camera");
-        camera.position.x = o.getRectangle().x;
-        camera.position.y = o.getRectangle().y;
+
+        camera.position.x = physX.getHero().getPosition().x;
+        camera.position.y = physX.getHero().getPosition().y;
         camera.zoom = 0.5f;
         camera.update();
 
@@ -84,19 +94,24 @@ public class MyGdxGame extends ApplicationAdapter {
 
         nosRog.setWalk(false);
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            camera.position.x--;
+            physX.setHeroForce(new Vector2(-500,0));
             nosRog.setDir(true);
             nosRog.setWalk(true);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            camera.position.x++;
+            physX.setHeroForce(new Vector2(500,0));
             nosRog.setDir(false);
             nosRog.setWalk(true);
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) camera.position.y++;
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) camera.position.y--;
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+            physX.setHeroForce(new Vector2(0,1300));
+        }
 
+        //if (Gdx.input.isKeyPressed(Input.Keys.S)) camera.position.y--;
+
+        camera.position.x = physX.getHero().getPosition().x;
+        camera.position.y = physX.getHero().getPosition().y;
         camera.update();
 
         batch.begin();
@@ -108,7 +123,7 @@ public class MyGdxGame extends ApplicationAdapter {
         mapRenderer.render(foreGround);
 
         batch.begin();
-        batch.draw(nosRog.getFrame(), Gdx.graphics.getHeight() / 2, Gdx.graphics.getHeight() / 2);
+        batch.draw(nosRog.getFrame(), Gdx.graphics.getHeight() / 1.58f, Gdx.graphics.getHeight() / 2.20f);
         label.draw(batch, "Монет собрано: " + String.valueOf(score), 0, 0);
 
         for (int i = 0; i < coinList.size(); i++) {
@@ -134,12 +149,16 @@ public class MyGdxGame extends ApplicationAdapter {
         }
         renderer.setColor(heroClr);
         renderer.rect(nosRog.getRect().x, nosRog.getRect().y, nosRog.getRect().width, nosRog.getRect().height);
-        renderer.end();*/ // ДЛЯ ОТЛАДКИ
+        renderer.end(); // ДЛЯ ОТЛАДКИ*/
+
+        physX.step();
+        physX.debugDraw(camera);
     }
 
     @Override
     public void dispose() {
         batch.dispose();
         coinList.get(0).dispose();
+        physX.dispose();
     }
 }
