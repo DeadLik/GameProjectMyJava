@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.8" tiledversion="1.8.5" orientation="orthogonal" renderorder="right-down" width="188" height="44" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="34">
+  <tileset firstgid="1" name="monochrome_tilemap_transparent" tilewidth="16" tileheight="16" tilecount="441" columns="21">
+  <image source="monochrome_tilemap_transparent.png" width="339" height="339"/>
+ </tileset>
+ <tileset firstgid="442" name="sheet" tilewidth="16" tileheight="16" tilecount="136" columns="17">
+  <image source="sheet.png" width="272" height="128"/>
+ </tileset>
+ <tileset firstgid="578" name="1626794363_10-kartinkin-com-p-piksel-art-taili-art-krasivo-10" tilewidth="16" tileheight="16" tilecount="4096" columns="64">
+  <image source="1626794363_10-kartinkin-com-p-piksel-art-taili-art-krasivo-10.png" width="1024" height="1024"/>
  </tileset>
  <layer id="1" name="Слой тайлов 1" width="188" height="44">
   <data encoding="base64" compression="zlib">
