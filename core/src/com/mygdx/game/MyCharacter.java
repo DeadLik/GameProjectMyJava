@@ -7,52 +7,46 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class MyCharacter {
-    private AnimPlayer animRight, animJump, animIdle;
-    private float dTime;
-    private boolean dir, run, jump;
-    private Rectangle rectangle;
+    private AnimPlayer idle, jump, walkRight;
+    private boolean isJump, isWalk, dir;
+    private Vector2 pos;
+    private Rectangle rect;
 
     public MyCharacter() {
-        animRight = new AnimPlayer("hero/runRight.png", 8, 1, 16.0f, Animation.PlayMode.LOOP);
-        animJump = new AnimPlayer("hero/jump.png", 1, 1, 16.0f, Animation.PlayMode.LOOP);
-        animIdle = new AnimPlayer("hero/idle.png", 1, 1, 16.0f, Animation.PlayMode.LOOP);
-        rectangle = new Rectangle(Gdx.graphics.getWidth() / 2.63f, Gdx.graphics.getHeight() / 2, animIdle.getFrame().getRegionWidth(), animIdle.getFrame().getRegionHeight());
+        idle = new AnimPlayer("hero/idle.png", 1, 1, 16.0f, Animation.PlayMode.LOOP);
+        jump = new AnimPlayer("hero/jump.png", 1, 1, 16.0f, Animation.PlayMode.LOOP);
+        walkRight = new AnimPlayer("hero/runRight.png", 8, 1, 16.0f, Animation.PlayMode.LOOP);
+        pos = new Vector2(Gdx.graphics.getWidth()/2, Gdx.graphics.getHeight()/2);
+        rect = new Rectangle(Gdx.graphics.getWidth()/2.10f, Gdx.graphics.getHeight()/2.22f,walkRight.getFrame().getRegionWidth(),walkRight.getFrame().getRegionHeight());
     }
 
-    public void setTime(float time) {dTime = time;}
+    public void setWalk(boolean walk) {isWalk = walk;}
 
-    public TextureRegion getFrame() {
-        dTime = Gdx.graphics.getDeltaTime();
-        TextureRegion tmp;
-        if (dir & run & !jump) {
-            animRight.step(dTime);
-            if (!animRight.getFrame().isFlipX()) animRight.getFrame().flip(true, false);
-            tmp = animRight.getFrame();
-        } else if (!dir & run & !jump) {
-            animRight.step(dTime);
-            if (animRight.getFrame().isFlipX()) animRight.getFrame().flip(true, false);
-            tmp = animRight.getFrame();
-        } else if (dir & !run & !jump) {
-            animIdle.step(dTime);
-            if (!animIdle.getFrame().isFlipX()) animIdle.getFrame().flip(true, false);
-            tmp = animIdle.getFrame();
-        } else if (!dir & !run & !jump) {
-            animIdle.step(dTime);
-            if (animIdle.getFrame().isFlipX()) animIdle.getFrame().flip(true, false);
-            tmp = animIdle.getFrame();
-        } else if (dir & !run & jump) {
-            animJump.step(dTime);
-            if (!animJump.getFrame().isFlipX()) animJump.getFrame().flip(true, false);
-            tmp = animJump.getFrame();
-        } else {
-            animJump.step(dTime);
-            if (animJump.getFrame().isFlipX()) animJump.getFrame().flip(true, false);
-            tmp = animJump.getFrame();
+    public void setDir(boolean dir) {this.dir = dir;}
+
+    public TextureRegion getFrame(){
+        TextureRegion tmpTex = null;
+        if (!isJump && !isWalk && !dir) {
+            idle.step(Gdx.graphics.getDeltaTime());
+            if (idle.getFrame().isFlipX()) idle.getFrame().flip(true, false);
+            tmpTex = idle.getFrame();
+        } else if (!isJump && !isWalk && dir) {
+            idle.step(Gdx.graphics.getDeltaTime());
+            if (!idle.getFrame().isFlipX()) idle.getFrame().flip(true, false);
+            tmpTex = idle.getFrame();
+        } else  if (!isJump && isWalk && !dir) {
+            walkRight.step(Gdx.graphics.getDeltaTime());
+            if (walkRight.getFrame().isFlipX()) walkRight.getFrame().flip(true, false);
+            tmpTex = walkRight.getFrame();
+        } else  if (!isJump && isWalk && dir) {
+            walkRight.step(Gdx.graphics.getDeltaTime());
+            if (!walkRight.getFrame().isFlipX()) walkRight.getFrame().flip(true, false);
+            tmpTex = walkRight.getFrame();
         }
-        return tmp;
+        return tmpTex;
     }
 
-    public void setWalk(boolean b) {run = b;}
-    public void setDir(boolean b) {dir = b;}
-    public Rectangle getRect() {return rectangle;}
+    public Vector2 getPos() {return pos;}
+
+    public Rectangle getRect() {return rect;}
 }

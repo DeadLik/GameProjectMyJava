@@ -16,10 +16,8 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.util.ArrayList;
@@ -28,7 +26,7 @@ import java.util.List;
 
 public class MyGdxGame extends ApplicationAdapter {
     private SpriteBatch batch;
-    //private ShapeRenderer renderer; //ДЛЯ ОТЛАДКИ
+    //    private ShapeRenderer renderer; //ДЛЯ ОТЛАДКИ
     private Label label;
     private TiledMap map;
     private OrthogonalTiledMapRenderer mapRenderer;
@@ -36,51 +34,26 @@ public class MyGdxGame extends ApplicationAdapter {
     private List<Coin> coinList;
     private Texture fon;
     private MyCharacter nosRog;
-    private int[] foreGround, backGround;
-    private int score;
+    private PhysX physX;
 
-    private World world;
-    private Box2DDebugRenderer debugRenderer;
-    private boolean start;
-    private Body heroBody;
+    private int[] foreGround, backGround;
+
+    private int score;
 
     @Override
     public void create() {
-        world = new World(new Vector2(0, -9.81f), true);
-        debugRenderer = new Box2DDebugRenderer();
-
-        BodyDef def = new BodyDef();
-        FixtureDef fdef = new FixtureDef();
-        PolygonShape polygonShape = new PolygonShape();
-
-        def.position.set(new Vector2(700f, 318f));
-        def.type = BodyDef.BodyType.StaticBody;
-        fdef.density = 1;
-        fdef.friction = 0f;
-        fdef.restitution = 0.0f;
-
-        polygonShape.setAsBox(700.67f, 13.58f);
-        fdef.shape = polygonShape;
-
-        world.createBody(def).createFixture(fdef);
-
-        def.type = BodyDef.BodyType.DynamicBody;
-        for (int i = 0; i < 25; i++) {
-            def.position.set(new Vector2(MathUtils.random(0f, 500f), 500f));
-            def.gravityScale = MathUtils.random(0.5f, 5f);
-
-            float size = MathUtils.random(3f, 15f);
-            polygonShape.setAsBox(size, size);
-            fdef.shape = polygonShape;
-            world.createBody(def).createFixture(fdef);
-        }
-
-        polygonShape.dispose();
-
         nosRog = new MyCharacter();
         fon = new Texture("fon.png");
         map = new TmxMapLoader().load("maps/level1.tmx");
         mapRenderer = new OrthogonalTiledMapRenderer(map);
+
+        physX = new PhysX();
+        if (map.getLayers().get("land") != null) {
+            MapObjects mo = map.getLayers().get("land").getObjects();
+            physX.addObjects(mo);
+            MapObject mo1 = map.getLayers().get("Слой объектов 2").getObjects().get("hero");
+            physX.addObject(mo1);
+        }
 
         foreGround = new int[1];
         foreGround[0] = map.getLayers().getIndex("Слой тайлов 2");
@@ -88,15 +61,16 @@ public class MyGdxGame extends ApplicationAdapter {
         backGround[0] = map.getLayers().getIndex("Слой тайлов 1");
 
         batch = new SpriteBatch();
-        //renderer = new ShapeRenderer(); //ДЛЯ ОТЛАДКИ
+//        renderer = new ShapeRenderer(); //ДЛЯ ОТЛАДКИ
 
 
         label = new Label(36);
 
         camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         RectangleMapObject o = (RectangleMapObject) map.getLayers().get("Слой объектов 2").getObjects().get("camera");
-        camera.position.x = o.getRectangle().x;
-        camera.position.y = o.getRectangle().y;
+
+        camera.position.x = physX.getHero().getPosition().x;
+        camera.position.y = physX.getHero().getPosition().y;
         camera.zoom = 0.5f;
         camera.update();
 
@@ -120,19 +94,24 @@ public class MyGdxGame extends ApplicationAdapter {
 
         nosRog.setWalk(false);
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            camera.position.x--;
+            physX.setHeroForce(new Vector2(-500,0));
             nosRog.setDir(true);
             nosRog.setWalk(true);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            camera.position.x++;
+            physX.setHeroForce(new Vector2(500,0));
             nosRog.setDir(false);
             nosRog.setWalk(true);
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) camera.position.y++;
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) camera.position.y--;
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+            physX.setHeroForce(new Vector2(0,1300));
+        }
 
+        //if (Gdx.input.isKeyPressed(Input.Keys.S)) camera.position.y--;
+
+        camera.position.x = physX.getHero().getPosition().x;
+        camera.position.y = physX.getHero().getPosition().y;
         camera.update();
 
         batch.begin();
@@ -141,9 +120,10 @@ public class MyGdxGame extends ApplicationAdapter {
 
         mapRenderer.setView(camera);
         mapRenderer.render(backGround);
+        mapRenderer.render(foreGround);
 
         batch.begin();
-        batch.draw(nosRog.getFrame(), Gdx.graphics.getHeight() / 2, Gdx.graphics.getHeight() / 2);
+        batch.draw(nosRog.getFrame(), Gdx.graphics.getHeight() / 1.58f, Gdx.graphics.getHeight() / 2.20f);
         label.draw(batch, "Монет собрано: " + String.valueOf(score), 0, 0);
 
         for (int i = 0; i < coinList.size(); i++) {
@@ -169,21 +149,16 @@ public class MyGdxGame extends ApplicationAdapter {
         }
         renderer.setColor(heroClr);
         renderer.rect(nosRog.getRect().x, nosRog.getRect().y, nosRog.getRect().width, nosRog.getRect().height);
-        renderer.end();*/ // ДЛЯ ОТЛАДКИ
+        renderer.end(); // ДЛЯ ОТЛАДКИ*/
 
-        mapRenderer.setView(camera);
-        mapRenderer.render(foreGround);
-
-        world.step(1 / 60.0f, 3, 3);
-        debugRenderer.render(world, camera.combined);
+        physX.step();
+        physX.debugDraw(camera);
     }
-
-
 
     @Override
     public void dispose() {
         batch.dispose();
         coinList.get(0).dispose();
-        world.dispose();
+        physX.dispose();
     }
 }
