@@ -3,6 +3,7 @@ package com.mygdx.game;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -35,6 +36,7 @@ public class MyGdxGame extends ApplicationAdapter {
     private Texture fon;
     private MyCharacter nosRog;
     private PhysX physX;
+    private Music music;
 
     private int[] foreGround, backGround;
 
@@ -86,6 +88,12 @@ public class MyGdxGame extends ApplicationAdapter {
                 }
             }
         }
+
+        music = Gdx.audio.newMusic(Gdx.files.internal("sounds/musicBG.mp3"));
+        music.setLooping(true);
+        music.setVolume(1f);
+        music.play();
+
     }
 
     @Override
@@ -104,7 +112,7 @@ public class MyGdxGame extends ApplicationAdapter {
             nosRog.setWalk(true);
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.SPACE)&& physX.cl.isOnGround()) {
             physX.setHeroForce(new Vector2(0,1300));
         }
 
@@ -120,21 +128,27 @@ public class MyGdxGame extends ApplicationAdapter {
 
         mapRenderer.setView(camera);
         mapRenderer.render(backGround);
-        mapRenderer.render(foreGround);
 
         batch.begin();
         batch.draw(nosRog.getFrame(), Gdx.graphics.getHeight() / 1.58f, Gdx.graphics.getHeight() / 2.20f);
         label.draw(batch, "Монет собрано: " + String.valueOf(score), 0, 0);
 
         for (int i = 0; i < coinList.size(); i++) {
-            coinList.get(i).draw(batch, camera);
+            int state;
+            state = coinList.get(i).draw(batch, camera);
             if (coinList.get(i).isOverlaps(nosRog.getRect(), camera)) {
-                coinList.remove(i);
-                score++;
+                if(state == 0) coinList.get(i).setState();
+                if (state == 2) {
+                    coinList.remove(i);
+                    score++;
+                }
             }
         }
 
         batch.end();
+
+        mapRenderer.setView(camera);
+        mapRenderer.render(foreGround);
 
 /*        Color heroClr = new Color(Color.WHITE);
         mapRenderer.render(foreGround);
@@ -160,5 +174,7 @@ public class MyGdxGame extends ApplicationAdapter {
         batch.dispose();
         coinList.get(0).dispose();
         physX.dispose();
+        music.stop();
+        music.dispose();
     }
 }
