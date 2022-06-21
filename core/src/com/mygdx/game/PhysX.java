@@ -8,19 +8,22 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.utils.Array;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class PhysX {
     private final World world;
     private final Box2DDebugRenderer debugRenderer;
     public Contact cl;
+    public List<Fixture> rockBodys;
 
     private Body hero;
     public Body getHero() {
         return hero;
     }
-
     public void setHeroForce(Vector2 force){hero.applyForceToCenter(force, true);}
 
     public PhysX() {
@@ -32,7 +35,6 @@ public class PhysX {
     }
 
     public void step() {world.step(1 / 60.0f, 3, 3);}
-
     public void debugDraw(OrthographicCamera camera) {debugRenderer.render(world, camera.combined);}
 
     public void dispose() {
@@ -149,11 +151,24 @@ public class PhysX {
             fdef.density = (float) obj.getProperties().get("density");
             fdef.friction = (float) obj.getProperties().get("friction");
 
-            world.createBody(def).createFixture(fdef).setUserData(name);
+            world.createBody(def).createFixture(fdef).setUserData(obj.getName());
 
         }
         poly_h.dispose();
         circle.dispose();
+    }
+
+    public int rockInit() {
+        Array<Fixture> fixtureArray = new Array<>(world.getBodyCount());
+        world.getFixtures(fixtureArray);
+        rockBodys = new ArrayList<Fixture>();
+        for (Fixture bdy : fixtureArray) {
+            if (bdy.getUserData() != null) {
+                String name = (String) bdy.getUserData();
+                if (name.equals("rock")) {rockBodys.add(bdy);}
+            }
+        }
+        return rockBodys.size();
     }
 
     public class Contact implements ContactListener {

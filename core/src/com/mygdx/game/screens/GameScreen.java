@@ -1,13 +1,13 @@
-package com.mygdx.game;
+package com.mygdx.game.screens;
 
-import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapLayer;
@@ -19,15 +19,19 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.mygdx.game.Coin;
+import com.mygdx.game.Label;
+import com.mygdx.game.MyCharacter;
+import com.mygdx.game.PhysX;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-public class MyGdxGame extends ApplicationAdapter {
+public class GameScreen implements Screen {
     private SpriteBatch batch;
-    //    private ShapeRenderer renderer; //ДЛЯ ОТЛАДКИ
+    private ShapeRenderer renderer; //ДЛЯ ОТЛАДКИ
     private Label label;
     private TiledMap map;
     private OrthogonalTiledMapRenderer mapRenderer;
@@ -42,18 +46,28 @@ public class MyGdxGame extends ApplicationAdapter {
 
     private int score;
 
-    @Override
-    public void create() {
+    private boolean test;
+
+    final Game game;
+
+    public GameScreen(Game game) {
+        this.game = game;
+        camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        physX = new PhysX();
+
         nosRog = new MyCharacter();
         fon = new Texture("fon.png");
         map = new TmxMapLoader().load("maps/level1.tmx");
         mapRenderer = new OrthogonalTiledMapRenderer(map);
+        RectangleMapObject o = (RectangleMapObject) map.getLayers().get("Слой объектов 2").getObjects().get("camera");
 
-        physX = new PhysX();
         if (map.getLayers().get("land") != null) {
             MapObjects mo = map.getLayers().get("land").getObjects();
             physX.addObjects(mo);
         }
+        MapObject mo1 = map.getLayers().get("Слой объектов 2").getObjects().get("hero");
+        physX.addObject(mo1);
+        System.out.printf("" + physX.rockInit());
 
         foreGround = new int[1];
         foreGround[0] = map.getLayers().getIndex("Слой тайлов 2");
@@ -61,18 +75,9 @@ public class MyGdxGame extends ApplicationAdapter {
         backGround[0] = map.getLayers().getIndex("Слой тайлов 1");
 
         batch = new SpriteBatch();
-//        renderer = new ShapeRenderer(); //ДЛЯ ОТЛАДКИ
-
+        renderer = new ShapeRenderer(); //ДЛЯ ОТЛАДКИ
 
         label = new Label(36);
-
-        camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        RectangleMapObject o = (RectangleMapObject) map.getLayers().get("Слой объектов 2").getObjects().get("camera");
-
-        camera.position.x = physX.getHero().getPosition().x;
-        camera.position.y = physX.getHero().getPosition().y;
-        camera.zoom = 0.5f;
-        camera.update();
 
         coinList = new ArrayList<>();
         MapLayer ml = map.getLayers().get("coins");
@@ -92,26 +97,33 @@ public class MyGdxGame extends ApplicationAdapter {
         music.setVolume(1f);
         music.play();
 
+        camera.zoom = 0.5f;
     }
 
     @Override
-    public void render() {
+    public void show() {
+
+    }
+
+    @Override
+    public void render(float delta) {
+        test = false;
         ScreenUtils.clear(1, 0, 0, 1);
 
         nosRog.setWalk(false);
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            physX.setHeroForce(new Vector2(-500,0));
+            physX.setHeroForce(new Vector2(-500, 0));
             nosRog.setDir(true);
             nosRog.setWalk(true);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            physX.setHeroForce(new Vector2(500,0));
+            physX.setHeroForce(new Vector2(500, 0));
             nosRog.setDir(false);
             nosRog.setWalk(true);
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.SPACE)&& physX.cl.isOnGround()) {
-            physX.setHeroForce(new Vector2(0,1300));
+        if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && physX.cl.isOnGround()) {
+            physX.setHeroForce(new Vector2(0, 1300));
         }
 
         //if (Gdx.input.isKeyPressed(Input.Keys.S)) camera.position.y--;
@@ -135,10 +147,13 @@ public class MyGdxGame extends ApplicationAdapter {
             int state;
             state = coinList.get(i).draw(batch, camera);
             if (coinList.get(i).isOverlaps(nosRog.getRect(), camera)) {
-                if(state == 0) coinList.get(i).setState();
+                if (state == 0) coinList.get(i).setState();
                 if (state == 2) {
                     coinList.remove(i);
                     score++;
+                    if (score > 7) {
+                        test = true;
+                    }
                 }
             }
         }
@@ -164,7 +179,43 @@ public class MyGdxGame extends ApplicationAdapter {
         renderer.end(); // ДЛЯ ОТЛАДКИ*/
 
         physX.step();
-        physX.debugDraw(camera);
+        //physX.debugDraw(camera);
+
+
+        renderer.begin(ShapeRenderer.ShapeType.Filled);
+        renderer.setColor(Color.GRAY);
+        for (Fixture fixture : physX.rockBodys) {
+            float cx = (fixture.getBody().getPosition().x - camera.position.x) / camera.zoom + Gdx.graphics.getWidth() / 2;
+            float cy = (fixture.getBody().getPosition().y - camera.position.y) / camera.zoom + Gdx.graphics.getHeight() / 2;
+            float cR = fixture.getShape().getRadius() / camera.zoom;
+            renderer.circle(cx, cy, cR);
+        }
+        renderer.end();
+
+        if (test == true) {
+            game.setScreen(new InScreen(game));
+            dispose();
+        }
+    }
+
+    @Override
+    public void resize(int width, int height) {
+
+    }
+
+    @Override
+    public void pause() {
+
+    }
+
+    @Override
+    public void resume() {
+
+    }
+
+    @Override
+    public void hide() {
+
     }
 
     @Override
