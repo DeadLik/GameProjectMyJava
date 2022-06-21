@@ -46,7 +46,7 @@ public class GameScreen implements Screen {
 
     private int score;
 
-    private boolean test;
+    private boolean levelEnd;
 
     final Game game;
 
@@ -107,7 +107,7 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        test = false;
+        levelEnd = false;
         ScreenUtils.clear(1, 0, 0, 1);
 
         nosRog.setWalk(false);
@@ -152,7 +152,7 @@ public class GameScreen implements Screen {
                     coinList.remove(i);
                     score++;
                     if (score > 7) {
-                        test = true;
+                        levelEnd = true;
                     }
                 }
             }
@@ -192,7 +192,7 @@ public class GameScreen implements Screen {
         }
         renderer.end();
 
-        if (test == true) {
+        if (levelEnd == true) {
             game.setScreen(new InScreen(game));
             dispose();
         }
