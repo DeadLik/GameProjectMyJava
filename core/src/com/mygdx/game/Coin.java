@@ -21,7 +21,7 @@ public class Coin {
 
     public void setState() {
         sound.play(3f,1,0);
-        time = 0.125f;
+        time = 0.0625f;
         state = 1;
     }
 
